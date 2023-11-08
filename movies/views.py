@@ -7,6 +7,12 @@ from .models import Movie, Review, List, Provider
 from .forms import MovieForm, ReviewForm, ProviderForm
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+import requests
+
+TMDB_API_BASEURL = 'https://api.themoviedb.org/3/movie/'
+TMDB_POSTER_BASEURL = 'https://www.themoviedb.org/t/p/w1280'
+API_KEY = '14cfd7e7813e004c4301b4055cce0f60'
+
 
 
 def detail_movie(request, movie_id):
@@ -130,3 +136,20 @@ class ListCreateView(LoginRequiredMixin, PermissionRequiredMixin,
     fields = ['name', 'author', 'movies']
     success_url = reverse_lazy('movies:lists')
     permission_required = 'movies.add_list'
+
+@login_required
+@permission_required('movies.add_movie')
+def import_movie(request):
+    if request.method == 'POST':
+        movie_id = request.POST['movie_id']
+        r = requests.get(TMDB_API_BASEURL + movie_id,
+                         params={"api_key": API_KEY})
+        if r.status_code == 200:
+            data = r.json()
+            movie = Movie(name=data['title'],
+                          release_year=data['release_date'][:4],
+                          poster_url=TMDB_POSTER_BASEURL + data['poster_path'])
+            movie.save()
+            return HttpResponseRedirect(
+                reverse('movies:detail', args=(movie.pk, )))
+    return render(request, 'movies/import.html', {})
