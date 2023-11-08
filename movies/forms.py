@@ -21,11 +21,9 @@ class ReviewForm(ModelForm):
     class Meta:
         model = Review
         fields = [
-            'author',
             'text',
         ]
         labels = {
-            'author': 'Usuário',
             'text': 'Resenha',
         }
 
